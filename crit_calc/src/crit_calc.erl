@@ -132,6 +132,14 @@ crit_outcome(magic, failure) ->
 crit_outcome(_Tool, _Type) ->
     "Unknown tool — even the narrator is confused.".
 
+%% ---------- Random list helper ----------
+pick_random([H]) -> H;
+pick_random(List) when is_list(List), List =/= [] ->
+    N = length(List),
+    lists:nth(rand:uniform(N), List);
+pick_random(_) ->
+    "No outcomes defined.".
+
 %% Interactive menus 
 
 play() ->
