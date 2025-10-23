@@ -36,9 +36,8 @@ Instructions for using the software:
 
 To recreate the development environment, you need the following software and/or libraries with the specified versions:
 
-* Erlang/OTP 28 (runtime and compiler)
+* Erlang/OTP 28 
 * rebar3 (build tool) — e.g., 3.25.x
-* Recommended: macOS 14+ or Linux (Ubuntu/Debian); Windows via WSL2
 
 ## Useful Websites to Learn More
 

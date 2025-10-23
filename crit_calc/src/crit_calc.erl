@@ -1,6 +1,4 @@
-%% ------------------------------------------------------------
-%% Critical Event Calculator – Phase 2: outcomes + case-of
-%% ------------------------------------------------------------
+%% Critical Event Calculator for Dungeons & Dragons
 -module(crit_calc).
 -export([
     seed/0,
@@ -24,8 +22,7 @@ seed() ->
     ok.
 
 %% ---------- Dice ----------
-roll_d20() ->
-    rand:uniform(20).
+roll_d20() -> rand:uniform(20).
 
 outcome_type(Roll) when is_integer(Roll), Roll >= 1, Roll =< 20 ->
     case Roll of
@@ -34,6 +31,7 @@ outcome_type(Roll) when is_integer(Roll), Roll >= 1, Roll =< 20 ->
         _  -> normal
     end.
 
+%% ---------- Simulation (data tuples) ----------
 simulate_once(Tool) when is_atom(Tool) ->
     R = roll_d20(),
     {R, outcome_type(R), Tool}.
@@ -51,9 +49,7 @@ simulate_n_(Tool, N, Acc) ->
 force(Tool, success) when is_atom(Tool) -> {forced, success, Tool};
 force(Tool, failure) when is_atom(Tool) -> {forced, failure, Tool}.
 
-%% ============================================================
-%% Outcomes 
-%% ============================================================
+%% Outcomes & text formatting
 
 describe({forced, Type, Tool}) when Type == success; Type == failure ->
     Msg = crit_outcome(Tool, Type),
@@ -77,122 +73,144 @@ simulate_n_text(Tool, N) ->
     LinesIolist = lists:map(fun(T) -> [describe(T), $\n] end, Tuples),
     lists:flatten(LinesIolist).
 
-%% ---------- Outcome selection ----------
-crit_outcome(Tool, success) when is_atom(Tool) ->
-    pick_random(outcome_list(Tool, success));
-crit_outcome(Tool, failure) when is_atom(Tool) ->
-    pick_random(outcome_list(Tool, failure));
-crit_outcome(_BadTool, _BadType) ->
-    "Invalid tool or crit type.".
+%% ---------- Flavor Text Outcomes (Humorous / Witty) ----------
+crit_outcome(axe, success) ->
+    pick_random([
+        "Your axe finds its mark with stylish precision. You act like you meant to do that.",
+        "A perfect strike! You pause, allowing witnesses a moment to appreciate your greatness."
+    ]);
+crit_outcome(axe, failure) ->
+    pick_random([
+        "You swing with enthusiasm and hit nothing. You pretend it was a ‘warning strike’.",
+        "Your axe slips slightly. You recover quickly, hoping nobody noticed. They noticed."
+    ]);
 
-outcome_list(axe, success) ->
-    [
-      "You cleave through defenses; target is sundered and staggered.",
-      "Your axe bites deep—extra momentum frightens nearby foes."
-    ];
-outcome_list(axe, failure) ->
-    [
-      "You misjudge the range and strike with the haft; the handle cracks—Dex save to avoid dropping the head.",
-      "Your swing overextends; you are off-balance until your next turn."
-    ];
-outcome_list(sword, success) ->
-    [
-      "Perfect thrust—double damage and disarm attempt.",
-      "Flawless riposte—gain a free 5-ft reposition."
-    ];
-outcome_list(sword, failure) ->
-    [
-      "Your blade catches; you stumble—attack at disadvantage next turn.",
-      "Pommel strike whiffs; you nick yourself for minor damage."
-    ];
-outcome_list(mace, success) ->
-    [
-      "Crushing blow—target’s armor dents; their movement is reduced.",
-      "Skull-rattler—target must save or be stunned briefly."
-    ];
-outcome_list(mace, failure) ->
-    [
-      "You clip your own shin—ow. Take minor damage.",
-      "Swing goes wide; mace slips—use an action to recover."
-    ];
-outcome_list(spear, success) ->
-    [
-      "Pinpoint lunge—target is pinned in place briefly.",
-      "Whirl and strike—free shove 5 ft."
-    ];
-outcome_list(spear, failure) ->
-    [
-      "Spear lodges in terrain—lose your next attack to yank it free.",
-      "Countered! You’re dragged a step off balance."
-    ];
-outcome_list(magic, success) ->
-    [
-      "Arc surges—spell echoes to a nearby foe for half effect.",
-      "Perfect channel—spell DC increases for this cast."
-    ];
-outcome_list(magic, failure) ->
-    [
-      "Wild spark—roll on minor surge or take small feedback damage.",
-      "Miscast—spell fizzles and you grant advantage to the target."
-    ];
-outcome_list(_Unknown, _Type) ->
-    ["Unknown tool—no themed outcome available."].
+crit_outcome(sword, success) ->
+    pick_random([
+        "Your blade lands true, clean and efficient. You consider asking for a tip.",
+        "A flawless strike! You nod humbly, as if this was standard procedure."
+    ]);
+crit_outcome(sword, failure) ->
+    pick_random([
+        "You lunge forward, immediately questioning that decision. It goes poorly.",
+        "Your sword swing misses by a generous margin. Very generous."
+    ]);
 
-pick_random([H]) -> H;
-pick_random(List) when is_list(List), List =/= [] ->
-    N = length(List),
-    lists:nth(rand:uniform(N), List);
-pick_random(_) ->
-    "No outcomes defined.".
+crit_outcome(mace, success) ->
+    pick_random([
+        "A satisfying crunch echoes. You try not to look too proud… you fail.",
+        "Your mace thumps into its target with comedic finality. Nailed it."
+    ]);
+crit_outcome(mace, failure) ->
+    pick_random([
+        "You over-commit and nearly topple over. A solid ‘oops’ moment.",
+        "Your mace attack drags on the ground. Not your finest swing."
+    ]);
 
-%% ------------------ play loop ------------------
+crit_outcome(spear, success) ->
+    pick_random([
+        "A clean pierce, direct and effective. You smugly pretend it was effortless.",
+        "Your spear finds its target in one graceful motion. You hope someone was watching."
+    ]);
+crit_outcome(spear, failure) ->
+    pick_random([
+        "You poke at the air with great determination. The air remains uninjured.",
+        "Your spear glances off harmlessly. You pretend you were just measuring distance."
+    ]);
+
+crit_outcome(magic, success) ->
+    pick_random([
+        "Your spell bursts forth impressively! You act like that was definitely the intended effect.",
+        "Arcane energy lands perfectly. You suppress the urge to bow."
+    ]);
+crit_outcome(magic, failure) ->
+    pick_random([
+        "Your spell fizzles. You mutter something about ‘unstable ley lines’.",
+        "Sparks fly… mostly in the wrong direction. You pretend it’s ‘experimental magic’."
+    ]);
+
+crit_outcome(_Tool, _Type) ->
+    "Unknown tool — even the narrator is confused.".
+
+%% Interactive menus 
+
 play() ->
     seed(),
     io:format("Welcome to DnD Crit Simulator!~n"),
-    loop().
+    loop_main().
 
-loop() ->
-    io:format("Choose: axe | sword | mace | spear | magic | force_succ | force_fail | q~n> "),
-    case trim(io:get_line("")) of
-        "q" -> io:format("Bye!~n"), ok;
-
-        "force_succ" ->
-            Tool = ask_tool(),
-            io:format("~s~n", [lists:flatten(describe(force(Tool, success)))]),
-            loop();
-
-        "force_fail" ->
-            Tool = ask_tool(),
-            io:format("~s~n", [lists:flatten(describe(force(Tool, failure)))]),
-            loop();
-
-        ToolStr ->
-            case parse_tool(ToolStr) of
-                {ok, Tool} ->
-                    io:format("~s~n", [simulate_once_text(Tool)]),
-                    loop();
-                error ->
-                    io:format("Unknown choice.~n"),
-                    loop()
-            end
+%% ---- Main menu loop ----
+loop_main() ->
+    show_main_menu(),
+    Choice = trim(io:get_line("> ")),
+    case parse_choice_main(Choice) of
+        {roll, Tool} ->
+            io:format("~s~n", [simulate_once_text(Tool)]),
+            loop_main();
+        force_success ->
+            choose_weapon_forced(success);
+        force_failure ->
+            choose_weapon_forced(failure);
+        quit ->
+            io:format("Goodbye!~n"), ok;
+        error ->
+            io:format("Invalid choice.~n"),
+            loop_main()
     end.
 
-ask_tool() ->
-    io:format("Tool (axe|sword|mace|spear|magic): "),
-    case parse_tool(trim(io:get_line(""))) of
-        {ok, T} -> T;
-        error   -> io:format("Unknown tool, defaulting to sword.~n"), sword
+show_main_menu() ->
+    io:format("Choose your action:~n"),
+    io:format("1) Roll with Axe~n"),
+    io:format("2) Roll with Sword~n"),
+    io:format("3) Roll with Mace~n"),
+    io:format("4) Roll with Spear~n"),
+    io:format("5) Roll with Magic~n"),
+    io:format("6) Force a Critical Success~n"),
+    io:format("7) Force a Critical Failure~n"),
+    io:format("8) Quit~n").
+
+parse_choice_main("1") -> {roll, axe};
+parse_choice_main("2") -> {roll, sword};
+parse_choice_main("3") -> {roll, mace};
+parse_choice_main("4") -> {roll, spear};
+parse_choice_main("5") -> {roll, magic};
+parse_choice_main("6") -> force_success;
+parse_choice_main("7") -> force_failure;
+parse_choice_main("8") -> quit;
+parse_choice_main(_)   -> error.
+
+%% ---- Force flow: show weapon menu, apply forced result or quit ----
+choose_weapon_forced(Type) when Type == success; Type == failure ->
+    show_force_menu(),
+    C = trim(io:get_line("> ")),
+    case parse_choice_force(C) of
+        {weapon, Tool} ->
+            io:format("~s~n", [lists:flatten(describe(force(Tool, Type)))]),
+            loop_main();
+        quit ->
+            io:format("Goodbye!~n"), ok;
+        error ->
+            io:format("Invalid choice.~n"),
+            choose_weapon_forced(Type)
     end.
 
-parse_tool(S) ->
-    case string:lower(trim(S)) of
-        "axe"   -> {ok, axe};
-        "sword" -> {ok, sword};
-        "mace"  -> {ok, mace};
-        "spear" -> {ok, spear};
-        "magic" -> {ok, magic};
-        _       -> error
-    end.
+show_force_menu() ->
+    io:format("Choose a weapon (or 6 to Quit):~n"),
+    io:format("1) Axe~n"),
+    io:format("2) Sword~n"),
+    io:format("3) Mace~n"),
+    io:format("4) Spear~n"),
+    io:format("5) Magic~n"),
+    io:format("6) Quit~n").
 
+parse_choice_force("1") -> {weapon, axe};
+parse_choice_force("2") -> {weapon, sword};
+parse_choice_force("3") -> {weapon, mace};
+parse_choice_force("4") -> {weapon, spear};
+parse_choice_force("5") -> {weapon, magic};
+parse_choice_force("6") -> quit;
+parse_choice_force(_)   -> error.
+
+%% ---------- small string helper ----------
 trim(Str) when is_list(Str) ->
     string:trim(Str).
